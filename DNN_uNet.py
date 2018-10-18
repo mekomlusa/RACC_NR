@@ -21,7 +21,7 @@ import os
 import tensorflow as tf
 
 # Initial setup
-os.environ["CUDA VISIBLE DEVICES" ] = "2,3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 config.gpu_options.per_process_gpu_memory_fraction = 0.7

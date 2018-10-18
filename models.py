@@ -13,7 +13,7 @@ from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras import backend as keras
 
 # The original UNet.
-def Unet(pretrained_weights = None, input_size, loss = 'binary_crossentropy'):
+def Unet(input_size, loss = 'binary_crossentropy', pretrained_weights = None):
     inputs = Input(input_size)
     conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
     conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
