@@ -48,7 +48,7 @@ def load_data(kind,label):
     
     if(kind == "train"):
         ground_turth_folder = "../4095_randomized/training/"
-        noisy_folder = "4095_noisy_randomized_0p01/training/"
+        noisy_folder = "../4095_noisy_randomized_0p01/training/"
     if(kind == "valid"):
         ground_turth_folder = "../4095_randomized/validation/"
         noisy_folder = "../4095_noisy_randomized_0p01/validation/"
@@ -61,22 +61,34 @@ def load_data(kind,label):
     count = 0
     
     for text in groundTruths:
+        if text == ".DS_Store":
+            continue
+        
         count += 1
         if count % 500 == 0:
             print("Loading "+kind+"  example: "+str(count)+" for label : "+label)
             
         with open(ground_turth_folder+label+"/"+text, 'rb') as f:
             l = []
-            for c in get_next_character(f) :
-                l.append(int(c))
+            for c in get_next_character(f):
+                try:
+                    l.append(int(c))
+                except ValueError:
+                    print("Error in ground truths:", c, text)
             l = np.array(l)
             y.append(l)
                 
     for noise in noises:
+        if text == ".DS_Store":
+            continue
+        
         with open(noisy_folder+label+"/"+noise, 'rb') as f:
             l = []
-            for c in get_next_character(f) :
-                l.append(int(c))
+            for c in get_next_character(f):
+                try:
+                    l.append(int(c))
+                except ValueError:
+                    print("Error in noises:", c, noise)
             l = np.array(l)
             x.append(l)
             
@@ -88,7 +100,7 @@ def negGrowthRateLoss(b,q):
 
 def training(k, fileType, fileName):
     """ Training the data."""
-    input_rows, input_cols = k, 1 #not one hot
+    input_rows, input_cols = k, 1
     
     # the data, shuffled and split between train and test sets
     (x_train, y_train) = load_data("train",fileType)
@@ -96,15 +108,15 @@ def training(k, fileType, fileName):
     print('Before reshape:')
     print('x_train shape:', x_train.shape)
     print('x_valid shape:', x_valid.shape)
-    x_train = np.reshape(x_train,(len(x_train),k,1,1))
-    x_valid = np.reshape(x_valid,(len(x_valid),k,1,1))
-    y_train = np.reshape(y_train,(len(y_train),k,1,1))
-    y_valid = np.reshape(y_valid,(len(y_valid),k,1,1))
+    x_train = np.reshape(x_train,(len(x_train),input_rows,input_cols))
+    x_valid = np.reshape(x_valid,(len(x_valid),input_rows,input_cols))
+    y_train = np.reshape(y_train,(len(y_train),input_rows,input_cols))
+    y_valid = np.reshape(y_valid,(len(y_valid),input_rows,input_cols))
     print('After reshape:')
     print('x_train shape:', x_train.shape)
     print('x_valid shape:', x_valid.shape)
 
-    input_shape = (input_rows,input_cols,1)
+    input_shape = (input_rows,input_cols)
 
     # convert class vectors to binary class matrices
     print('Shuffling in unison')
@@ -115,7 +127,7 @@ def training(k, fileType, fileName):
     epochs = 20
 
     # below is an example for the html U-Net model
-    model = Unet(input_size=input_shape, loss=negGrowthRateLoss)
+    model = Unet(input_size=input_shape, k = k, loss=negGrowthRateLoss)
     filepath = "../results/"+fileName+".h5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
     csv_logger = CSVLogger("../results/"+fileName+".csv")
@@ -133,6 +145,7 @@ def inference(k, persistance_path, fileType, output_file_name):
     (x_test, y_test) = load_data("test",fileType)
     print('Before reshape:')
     print('x_test shape:', x_test.shape)
+    num_of_files = x_test.shape[0]
     x_test = np.reshape(x_test,(len(x_test),k,1,1))
     y_test = np.reshape(y_test,(len(y_test),k,1,1))
     print('After reshape:')
@@ -146,7 +159,7 @@ def inference(k, persistance_path, fileType, output_file_name):
     ct = np.array([0.0,0.0])
     p_p = np.array([0.0,0.0])
     p_y = np.array([0.0,0.0])
-    for j in range(0,len(x_test)):
+    for j in range(0,num_of_files):
         #filename = open("results/res_test_exmpl_"+str(j)+".csv",'w')
         for i in range(0,k):
             
