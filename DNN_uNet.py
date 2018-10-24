@@ -148,15 +148,23 @@ def training(k, fileType, fileName):
 
 def inference(k, persistance_path, fileType, output_file_name):
     """ Using the model presistence to do predictions."""
+    input_rows, input_cols = k, 1
+    pad_dim = 32
+    
     # load the shuffled test data
     (x_test, y_test) = load_data("test",fileType)
     print('Before reshape:')
     print('x_test shape:', x_test.shape)
-    num_of_files = x_test.shape[0]
-    x_test = np.reshape(x_test,(len(x_test),k,1,1))
-    y_test = np.reshape(y_test,(len(y_test),k,1,1))
+    print('y_test shape:', y_test.shape)
+    x_test = np.reshape(x_test,(len(x_test),input_rows,input_cols))
+    y_test = np.reshape(y_test,(len(y_test),input_rows,input_cols))
+    
+    x_test = np.repeat(x_test[:, :, np.newaxis], pad_dim, axis=2)
+    y_test = np.repeat(y_test[:, :, np.newaxis], pad_dim, axis=2)
     print('After reshape:')
     print('x_test shape:', x_test.shape)
+    print('y_test shape:', y_test.shape)
+    print('Shuffling in unison')
     shuffle_in_unison(x_test,y_test)
 
     model = Unet(pretrained_weights=persistance_path)
