@@ -15,10 +15,9 @@ from keras.callbacks import ModelCheckpoint
 from keras.callbacks import CSVLogger
 from keras import losses
 from keras import regularizers
-from models import Unet
-
+from models import Unet1D
 import os
-import tensorflow as tf
+
 
 # Initial setup
 os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
@@ -41,7 +40,7 @@ def get_next_character(f):
         yield c
         c = f.read(1)
 
-def load_data(kind,label):
+def load_data(kind,label,fileNameCollection):
     """ Preparing the data. """
     x = []
     y = []
@@ -60,13 +59,16 @@ def load_data(kind,label):
     noises = os.listdir('%s' % noisy_folder+label)
     count = 0
     
-    for text in groundTruths:
-        if text == ".DS_Store":
-            continue
-        
+    # fileNameCollection is a text file containing filenames of all the data (label and actual).
+    # It is used here so that the program can read input data and its corresponding label in correct order.
+    # also to remove inconsistent size concerns (e.g. having more labels than the features)
+    with open(fileNameCollection, 'r') as f:
+        alltext = f.read().strip().split('\n')
+    
+    for text in alltext:
         count += 1
         if count % 500 == 0:
-            print("Loading "+kind+"  example: "+str(count)+" for label : "+label)
+            print("Loading "+kind+" example: "+str(count)+" for label : "+label)
             
         with open(ground_turth_folder+label+"/"+text, 'rb') as f:
             l = []
@@ -76,19 +78,15 @@ def load_data(kind,label):
                 except ValueError:
                     print("Error in ground truths:", c, text)
             l = np.array(l)
-            y.append(l)
-                
-    for noise in noises:
-        if text == ".DS_Store":
-            continue
+            y.append(l) 
         
-        with open(noisy_folder+label+"/"+noise, 'rb') as f:
+        with open(noisy_folder+label+"/"+text, 'rb') as f:
             l = []
             for c in get_next_character(f):
                 try:
                     l.append(int(c))
                 except ValueError:
-                    print("Error in noises:", c, noise)
+                    print("Error in noises:", c, text)
             l = np.array(l)
             x.append(l)
             
@@ -98,32 +96,31 @@ def negGrowthRateLoss(b,q):
     """ Customized loss function. """
     return (K.mean(-K.log(b +pow(-1,b)+pow(-1,b+1)*q)/K.log(2.0)))
 
-def training(k, fileType, fileName):
+def training(k, fileType, fileName, trainCollection, valCollection):
     """ Training the data."""
     input_rows, input_cols = k, 1
-    pad_dim = 32
+    #pad_dim = 32
     
     # the data, shuffled and split between train and test sets
-    (x_train, y_train) = load_data("train",fileType)
-    (x_valid, y_valid) = load_data("valid",fileType)
+    (x_train, y_train) = load_data("train", fileType, trainCollection)
+    (x_valid, y_valid) = load_data("valid", fileType, valCollection)
     print('Before reshape:')
     print('x_train shape:', x_train.shape)
     print('x_valid shape:', x_valid.shape)
-    # add padding
+    # reshaping
     x_train = np.reshape(x_train,(len(x_train),input_rows,input_cols))
     x_valid = np.reshape(x_valid,(len(x_valid),input_rows,input_cols))
     y_train = np.reshape(y_train,(len(y_train),input_rows,input_cols))
     y_valid = np.reshape(y_valid,(len(y_valid),input_rows,input_cols))
-    
-    x_train = np.repeat(x_train[:, :, np.newaxis], pad_dim, axis=2)
-    x_valid = np.repeat(x_valid[:, :, np.newaxis], pad_dim, axis=2)
-    y_train = np.repeat(y_train[:, :, np.newaxis], pad_dim, axis=2)
-    y_valid = np.repeat(y_valid[:, :, np.newaxis], pad_dim, axis=2)
-    print('After padding:')
+    # x_train = np.repeat(x_train[:, :, np.newaxis], pad_dim, axis=2)
+    # x_valid = np.repeat(x_valid[:, :, np.newaxis], pad_dim, axis=2)
+    # y_train = np.repeat(y_train[:, :, np.newaxis], pad_dim, axis=2)
+    # y_valid = np.repeat(y_valid[:, :, np.newaxis], pad_dim, axis=2)
+    print('After reshape:')
     print('x_train shape:', x_train.shape)
     print('x_valid shape:', x_valid.shape)
 
-    input_shape = (k,pad_dim,1)
+    input_shape = (input_rows, input_cols, 1)
 
     # convert class vectors to binary class matrices
     print('Shuffling in unison')
@@ -134,7 +131,7 @@ def training(k, fileType, fileName):
     epochs = 20
 
     # below is an example for the html U-Net model
-    model = Unet(input_size=input_shape, k = k, loss=negGrowthRateLoss)
+    model = Unet1D(input_size=input_shape, k = k, loss=negGrowthRateLoss)
     filepath = "../results/"+fileName+".h5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
     csv_logger = CSVLogger("../results/"+fileName+".csv")
@@ -152,7 +149,7 @@ def inference(k, persistance_path, fileType, output_file_name):
     pad_dim = 32
     
     # load the shuffled test data
-    (x_test, y_test) = load_data("test",fileType)
+    (x_test, y_test) = load_data("test",fileType, fileNameCollection)
     print('Before reshape:')
     print('x_test shape:', x_test.shape)
     print('y_test shape:', y_test.shape)
@@ -236,6 +233,6 @@ def inference(k, persistance_path, fileType, output_file_name):
     file.write(str(mut_inf))
 
 if __name__ == "__main__":
-    training(4095, "html","html_unet_orig")
+    training(4095, "html","html_unet_orig","../4095_noisy_randomized_0p01/training/html_training_noisy.txt","../4095_noisy_randomized_0p01/validation/html_validation_noisy.txt")
 
 
