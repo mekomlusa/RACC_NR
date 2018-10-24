@@ -10,7 +10,7 @@ from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Conv2D, MaxPooling2D, UpSampling2D,Conv2DTranspose
 from keras import backend as K
 from math import log
-from keras.utils import plot_model
+#from keras.utils import plot_model
 from keras.callbacks import ModelCheckpoint
 from keras.callbacks import CSVLogger
 from keras import losses
@@ -138,7 +138,7 @@ def training(k, fileType, fileName):
     filepath = "../results/"+fileName+".h5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
     csv_logger = CSVLogger("../results/"+fileName+".csv")
-    plot_model(model,to_file="../results/"+fileName+".png",show_shapes =  True)
+    #plot_model(model,to_file="../results/"+fileName+".png",show_shapes =  True)
     model.fit(x_train, y_train,
               batch_size=batch_size,
               epochs=epochs,
