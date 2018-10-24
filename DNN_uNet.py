@@ -101,6 +101,7 @@ def negGrowthRateLoss(b,q):
 def training(k, fileType, fileName):
     """ Training the data."""
     input_rows, input_cols = k, 1
+    pad_dim = 32
     
     # the data, shuffled and split between train and test sets
     (x_train, y_train) = load_data("train",fileType)
@@ -108,15 +109,21 @@ def training(k, fileType, fileName):
     print('Before reshape:')
     print('x_train shape:', x_train.shape)
     print('x_valid shape:', x_valid.shape)
+    # add padding
     x_train = np.reshape(x_train,(len(x_train),input_rows,input_cols))
     x_valid = np.reshape(x_valid,(len(x_valid),input_rows,input_cols))
     y_train = np.reshape(y_train,(len(y_train),input_rows,input_cols))
     y_valid = np.reshape(y_valid,(len(y_valid),input_rows,input_cols))
-    print('After reshape:')
+    
+    x_train = np.repeat(x_train[:, :, np.newaxis], pad_dim, axis=2)
+    x_valid = np.repeat(x_valid[:, :, np.newaxis], pad_dim, axis=2)
+    y_train = np.repeat(y_train[:, :, np.newaxis], pad_dim, axis=2)
+    y_valid = np.repeat(y_valid[:, :, np.newaxis], pad_dim, axis=2)
+    print('After padding:')
     print('x_train shape:', x_train.shape)
     print('x_valid shape:', x_valid.shape)
 
-    input_shape = (input_rows,input_cols)
+    input_shape = (k,pad_dim,1)
 
     # convert class vectors to binary class matrices
     print('Shuffling in unison')
