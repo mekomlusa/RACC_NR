@@ -135,7 +135,7 @@ def training(k, fileType, fileName, trainCollection, valCollection):
     epochs = 20
 
     # below is an example for the html U-Net model
-    model = Unet1D(input_size=input_shape, k = k, loss=negGrowthRateLoss)
+    model = Unet1D(input_size=input_shape, k = k, loss = negGrowthRateLoss)
     filepath = "../results/"+fileName+".h5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
     csv_logger = CSVLogger("../results/"+fileName+".csv")
@@ -169,8 +169,10 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
     print('y_test shape:', y_test.shape)
     print('Shuffling in unison')
     shuffle_in_unison(x_test,y_test)
+    
+    input_shape = (input_rows, input_cols, 1)
 
-    model = Unet1D(pretrained_weights=persistance_path)
+    model = Unet1D(input_size=input_shape, k = k, loss = negGrowthRateLoss, pretrained_weights=persistance_path)
     predictions = model.predict(x_test,verbose=0)
     print(predictions.shape)
     p_p_y = np.array([[0.0,0.0],[0.0,0.0]])

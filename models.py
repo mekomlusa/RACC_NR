@@ -14,7 +14,7 @@ from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras import backend as keras
 
 # Modified UNet so that it works for 1D data.
-def Unet1D(input_size, k, loss = 'binary_crossentropy', pretrained_weights = None):
+def Unet1D(input_size, k, loss, pretrained_weights = None):
     inputs = Input(shape=input_size)
     conv1 = Conv2D(64, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
     conv1 = Conv2D(64, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
