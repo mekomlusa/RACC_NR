@@ -55,8 +55,6 @@ def load_data(kind,label,fileNameCollection):
         ground_turth_folder = "../4095_randomized/testing/"
         noisy_folder = "../4095_noisy_randomized_0p01/testing/"
         
-    groundTruths = os.listdir('%s' % ground_turth_folder+label)
-    noises = os.listdir('%s' % noisy_folder+label)
     count = 0
     
     # fileNameCollection is a text file containing filenames of all the data (label and actual).
@@ -107,6 +105,12 @@ def training(k, fileType, fileName, trainCollection, valCollection):
     print('Before reshape:')
     print('x_train shape:', x_train.shape)
     print('x_valid shape:', x_valid.shape)
+    # add a zero column at the end
+    x_train = np.append(x_train,np.zeros([len(x_train),1]),1)
+    x_valid = np.append(x_valid,np.zeros([len(x_valid),1]),1)
+    y_train = np.append(y_train,np.zeros([len(y_train),1]),1)
+    y_valid = np.append(y_valid,np.zeros([len(y_valid),1]),1)
+    
     # reshaping
     x_train = np.reshape(x_train,(len(x_train),input_rows,input_cols,1))
     x_valid = np.reshape(x_valid,(len(x_valid),input_rows,input_cols,1))
@@ -143,35 +147,38 @@ def training(k, fileType, fileName, trainCollection, valCollection):
               validation_data=(x_valid, y_valid),callbacks=[checkpoint,csv_logger])
     model.save_weights(filepath)
 
-def inference(k, persistance_path, fileType, output_file_name):
+def inference(k, persistance_path, fileType, output_file_name, testCollection):
     """ Using the model presistence to do predictions."""
     input_rows, input_cols = k, 1
-    pad_dim = 32
+    #pad_dim = 32
     
     # load the shuffled test data
-    (x_test, y_test) = load_data("test",fileType, fileNameCollection)
+    (x_test, y_test) = load_data("test",fileType, testCollection)
     print('Before reshape:')
     print('x_test shape:', x_test.shape)
     print('y_test shape:', y_test.shape)
     x_test = np.reshape(x_test,(len(x_test),input_rows,input_cols))
     y_test = np.reshape(y_test,(len(y_test),input_rows,input_cols))
+    # add a zero column at the end
+    x_test = np.append(x_test,np.zeros([len(x_test),1]),1)
+    y_test = np.append(y_test,np.zeros([len(y_test),1]),1)
     
-    x_test = np.repeat(x_test[:, :, np.newaxis], pad_dim, axis=2)
-    y_test = np.repeat(y_test[:, :, np.newaxis], pad_dim, axis=2)
+#    x_test = np.repeat(x_test[:, :, np.newaxis], pad_dim, axis=2)
+#    y_test = np.repeat(y_test[:, :, np.newaxis], pad_dim, axis=2)
     print('After reshape:')
     print('x_test shape:', x_test.shape)
     print('y_test shape:', y_test.shape)
     print('Shuffling in unison')
     shuffle_in_unison(x_test,y_test)
 
-    model = Unet(pretrained_weights=persistance_path)
+    model = Unet1D(pretrained_weights=persistance_path)
     predictions = model.predict(x_test,verbose=0)
     print(predictions.shape)
     p_p_y = np.array([[0.0,0.0],[0.0,0.0]])
     ct = np.array([0.0,0.0])
     p_p = np.array([0.0,0.0])
     p_y = np.array([0.0,0.0])
-    for j in range(0,num_of_files):
+    for j in range(0,len(y_test)):
         #filename = open("results/res_test_exmpl_"+str(j)+".csv",'w')
         for i in range(0,k):
             
@@ -233,6 +240,6 @@ def inference(k, persistance_path, fileType, output_file_name):
     file.write(str(mut_inf))
 
 if __name__ == "__main__":
-    training(4095, "html","html_unet_orig","../4095_noisy_randomized_0p01/training/html_training_noisy.txt","../4095_noisy_randomized_0p01/validation/html_validation_noisy.txt")
+    training(4096, "html","html_unet_orig","../4095_noisy_randomized_0p01/training/html_training_noisy.txt","../4095_noisy_randomized_0p01/validation/html_validation_noisy.txt")
 
 

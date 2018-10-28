@@ -35,22 +35,22 @@ def Unet1D(input_size, k, loss = 'binary_crossentropy', pretrained_weights = Non
     drop5 = Dropout(0.5)(conv5)
 
     up6 = Conv2D(512, (2,1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,1))(drop5))
-    merge6 = concatenate([drop4,up6], axis = 1)
+    merge6 = concatenate([drop4,up6], axis = 3)
     conv6 = Conv2D(512, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge6)
     conv6 = Conv2D(512, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv6)
 
     up7 = Conv2D(256, (2, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,1))(conv6))
-    merge7 = concatenate([conv3,up7], axis = 1)
+    merge7 = concatenate([conv3,up7], axis = 3)
     conv7 = Conv2D(256, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge7)
     conv7 = Conv2D(256, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv7)
 
     up8 = Conv2D(128, (2, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,1))(conv7))
-    merge8 = concatenate([conv2,up8], axis = 1)
+    merge8 = concatenate([conv2,up8], axis = 3)
     conv8 = Conv2D(128, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge8)
     conv8 = Conv2D(128, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv8)
 
     up9 = Conv2D(64, (2, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(UpSampling2D(size = (2,1))(conv8))
-    merge9 = concatenate([conv1,up9], axis = 1)
+    merge9 = concatenate([conv1,up9], axis = 3)
     conv9 = Conv2D(64, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(merge9)
     conv9 = Conv2D(64, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
     conv9 = Conv2D(2, (3, 1), activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
