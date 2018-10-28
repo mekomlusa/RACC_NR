@@ -157,14 +157,13 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
     print('Before reshape:')
     print('x_test shape:', x_test.shape)
     print('y_test shape:', y_test.shape)
-    x_test = np.reshape(x_test,(len(x_test),input_rows,input_cols))
-    y_test = np.reshape(y_test,(len(y_test),input_rows,input_cols))
+
     # add a zero column at the end
     x_test = np.append(x_test,np.zeros([len(x_test),1]),1)
     y_test = np.append(y_test,np.zeros([len(y_test),1]),1)
+    x_test = np.reshape(x_test,(len(x_test),input_rows,input_cols,1))
+    y_test = np.reshape(y_test,(len(y_test),input_rows,input_cols,1))
     
-#    x_test = np.repeat(x_test[:, :, np.newaxis], pad_dim, axis=2)
-#    y_test = np.repeat(y_test[:, :, np.newaxis], pad_dim, axis=2)
     print('After reshape:')
     print('x_test shape:', x_test.shape)
     print('y_test shape:', y_test.shape)
@@ -240,6 +239,6 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
     file.write(str(mut_inf))
 
 if __name__ == "__main__":
-    training(4096, "html","html_unet_orig","../4095_noisy_randomized_0p01/training/html_training_noisy.txt","../4095_noisy_randomized_0p01/validation/html_validation_noisy.txt")
-
+    #training(4096, "html","html_unet_orig","../4095_noisy_randomized_0p01/training/html_training_noisy.txt","../4095_noisy_randomized_0p01/validation/html_validation_noisy.txt")
+    inference(4096, "../results/html_unet_orig.h5", "html", "html_unet_orig", "/home/rlin225/unet/4095_noisy_randomized_0p01/testing/html_testing.txt")
 
