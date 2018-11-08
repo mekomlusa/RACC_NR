@@ -12,7 +12,7 @@ from keras import backend as K
 from math import log
 #from keras.utils import plot_model
 from keras.callbacks import ModelCheckpoint
-from keras.callbacks import CSVLogger
+from keras.callbacks import CSVLogger, EarlyStopping
 from keras import losses
 from keras import regularizers
 from models import Unet1D
@@ -135,16 +135,18 @@ def training(k, fileType, fileName, trainCollection, valCollection):
     epochs = 20
 
     # below is an example for the html U-Net model
-    model = Unet1D(input_size=input_shape, k = k, loss = negGrowthRateLoss)
+    model = Unet1D(input_size=input_shape, k = k, loss = negGrowthRateLoss, learning_rate = 1e-5)
     filepath = "../results/"+fileName+".h5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
     csv_logger = CSVLogger("../results/"+fileName+".csv")
+    # Helper: Early stopping.
+    early_stopper = EarlyStopping(patience=5)
     #plot_model(model,to_file="../results/"+fileName+".png",show_shapes =  True)
     model.fit(x_train, y_train,
               batch_size=batch_size,
               epochs=epochs,
               verbose=1,
-              validation_data=(x_valid, y_valid),callbacks=[checkpoint,csv_logger])
+              validation_data=(x_valid, y_valid),callbacks=[checkpoint,csv_logger,early_stopper])
     model.save_weights(filepath)
 
 def inference(k, persistance_path, fileType, output_file_name, testCollection):
@@ -172,7 +174,7 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
     
     input_shape = (input_rows, input_cols, 1)
 
-    model = Unet1D(input_size=input_shape, k = k, loss = negGrowthRateLoss, pretrained_weights=persistance_path)
+    model = Unet1D(input_size=input_shape, k = k, loss = negGrowthRateLoss, pretrained_weights=persistance_path, learning_rate = 1e-5)
     predictions = model.predict(x_test,verbose=0)
     print(predictions.shape)
     p_p_y = np.array([[0.0,0.0],[0.0,0.0]])
