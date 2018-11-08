@@ -181,7 +181,8 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
     p_y = np.array([0.0,0.0])
     for j in range(0,len(y_test)):
         #filename = open("results/res_test_exmpl_"+str(j)+".csv",'w')
-        for i in range(0,k):
+        # Excluding the last bit here, since it's appended and will always be 0
+        for i in range(0,k-1):
             
             #filename.write(str(predictions[j][i])+","+str(y_test[j][i])+","+str(x_test[j][i])+"\n")
             #if(y_test[j][i][0][0] != x_test[j][i][0][0]):
@@ -241,6 +242,6 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
     file.write(str(mut_inf))
 
 if __name__ == "__main__":
-    #training(4096, "html","html_unet_orig","../4095_noisy_randomized_0p01/training/html_training_noisy.txt","../4095_noisy_randomized_0p01/validation/html_validation_noisy.txt")
-    inference(4096, "../results/html_unet_orig.h5", "html", "html_unet_orig", "/home/rlin225/unet/4095_noisy_randomized_0p01/testing/html_testing.txt")
+    training(4096, "html","html_unet_orig","../4095_noisy_randomized_0p01/training/html_training_noisy.txt","../4095_noisy_randomized_0p01/validation/html_validation_noisy.txt")
+    #inference(4096, "../results/html_unet_orig.h5", "html", "html_unet_orig", "/home/rlin225/unet/4095_noisy_randomized_0p01/testing/html_testing.txt")
 
