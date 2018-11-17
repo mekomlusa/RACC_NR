@@ -15,7 +15,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.callbacks import CSVLogger, EarlyStopping
 from keras import losses
 from keras import regularizers
-from models import Unet1D
+from models import Unet1D, DilatedUnet1D
 import os
 
 
@@ -135,7 +135,7 @@ def training(k, fileType, fileName, trainCollection, valCollection):
     epochs = 20
 
     # below is an example for the html U-Net model
-    model = Unet1D(input_size=input_shape, k = k, loss = negGrowthRateLoss, learning_rate = 1e-5)
+    model = DilatedUnet1D(input_size=input_shape, k = k, loss = negGrowthRateLoss, learning_rate = 1e-5)
     filepath = "../results/"+fileName+".h5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
     csv_logger = CSVLogger("../results/"+fileName+".csv")
@@ -174,7 +174,7 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
     
     input_shape = (input_rows, input_cols, 1)
 
-    model = Unet1D(input_size=input_shape, k = k, loss = negGrowthRateLoss, pretrained_weights=persistance_path, learning_rate = 1e-5)
+    model = DilatedUnet1D(input_size=input_shape, k = k, loss = negGrowthRateLoss, pretrained_weights=persistance_path, learning_rate = 1e-5)
     predictions = model.predict(x_test,verbose=0)
     print(predictions.shape)
     p_p_y = np.array([[0.0,0.0],[0.0,0.0]])
@@ -182,9 +182,10 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
     p_p = np.array([0.0,0.0])
     p_y = np.array([0.0,0.0])
     for j in range(0,len(y_test)):
-        #filename = open("results/res_test_exmpl_"+str(j)+".csv",'w')
+        if j < 5: 
+            filename = open("results/res_test_exmpl_"+str(j)+".csv",'w')
         # Excluding the last bit here, since it's appended and will always be 0
-        for i in range(0,k-1):
+        for i in range(0,k):
             
             #filename.write(str(predictions[j][i])+","+str(y_test[j][i])+","+str(x_test[j][i])+"\n")
             #if(y_test[j][i][0][0] != x_test[j][i][0][0]):
