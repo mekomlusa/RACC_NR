@@ -230,7 +230,7 @@ def inference(k, persistance_path, fileType, test_ground_truth_folder, test_nois
         # Excluding the last bit here, since it's appended and will always be 0
         for i in range(0,4095):
             
-            filename.write(str(predictions[j][i])"\n")
+            filename.write(str(predictions[j][i])+"\n")
             #if(y_test[j][i][0][0] != x_test[j][i][0][0]):
             #print(str(y_test[j][i][0][0])+" "+str(x_test[j][i][0][0])+"  "+str(predictions[j][i][0][0]))
             if(y_test[j][i] == 0):
