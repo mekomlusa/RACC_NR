@@ -1,5 +1,6 @@
 # coding: utf-8
 # An attempt to use UNet on the RACC_NR problem.
+# (Command line usage available)
 
 import tensorflow as tf
 import keras
@@ -27,81 +28,110 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.7
 K.set_session(tf.Session(config = config))
 
 def shuffle_in_unison(a, b):
-    """ Shuffling the data. """
+    """ 
+        Shuffling the data. Order does not matter.
+        
+    Parameters: 
+        a (np.ndarray): the first item to be shuffled.
+        b (np.ndarray): the second item to be shuffled.
+        
+    """
     rng_state = np.random.get_state()
     np.random.shuffle(a)
     np.random.set_state(rng_state)
     np.random.shuffle(b)
 
 def get_next_character(f):
-    """Reads one character from the given textfile."""
+    """ 
+        Reads one character from the given textfile.
+        
+    Parameters: 
+        f (file): the file object to be read.
+        
+    """
     c = f.read(1)
     while c:
         yield c
         c = f.read(1)
 
-def load_data(kind,label,fileNameCollection):
-    """ Preparing the data. """
+def load_data(ground_truth_folder, noisy_folder, label):
+    """ 
+        Preparing the data.
+        
+    Parameters: 
+        ground_truth_folder (str): the path to the ground truth folder.
+        noisy_folder (str): the path to the noisy folder.
+        label (str): type of the data. Could be one of the following: pdf, latex, jpeg, html.
+        
+    Returns:
+        np.array(x): an numpy array representation of the features (X).
+        np.array(y): an numpy array representation of the labels (Y).
+        filenames (list of str): a collection of files inspected.
+    """
     x = []
     y = []
-    
-    if(kind == "train"):
-        ground_turth_folder = "../4095_randomized/training/"
-        noisy_folder = "../4095_noisy_randomized_0p01/training/"
-    if(kind == "valid"):
-        ground_turth_folder = "../4095_randomized/validation/"
-        noisy_folder = "../4095_noisy_randomized_0p01/validation/"
-    if(kind == "test"):
-        ground_turth_folder = "../4095_randomized/testing/"
-        noisy_folder = "../4095_noisy_randomized_0p01/testing/"
-        
+    filenames = []
     count = 0
     
-    # fileNameCollection is a text file containing filenames of all the data (label and actual).
-    # It is used here so that the program can read input data and its corresponding label in correct order.
-    # also to remove inconsistent size concerns (e.g. having more labels than the features)
-    with open(fileNameCollection, 'r') as f:
-        alltext = f.read().strip().split('\n')
+    if ground_truth_folder[-1] != '/':
+        ground_truth_folder += '/'
+    if noisy_folder[-1] != '/':
+        noisy_folder += '/'
     
-    for text in alltext:
+    all_files = os.listdir('%s' % ground_truth_folder)
+    
+    for file in all_files:
         count += 1
         if count % 500 == 0:
             print("Loading "+kind+" example: "+str(count)+" for label : "+label)
+        
+        filenames.append(file)
             
-        with open(ground_turth_folder+label+"/"+text, 'rb') as f:
+        with open(ground_truth_folder+label+"/"+file, 'rb') as f:
             l = []
             for c in get_next_character(f):
                 try:
                     l.append(int(c))
                 except ValueError:
-                    print("Error in ground truths:", c, text)
+                    print("Error in ground truths:", c, file)
             l = np.array(l)
             y.append(l) 
         
-        with open(noisy_folder+label+"/"+text, 'rb') as f:
+        with open(noisy_folder+label+"/"+file, 'rb') as f:
             l = []
             for c in get_next_character(f):
                 try:
                     l.append(int(c))
                 except ValueError:
-                    print("Error in noises:", c, text)
+                    print("Error in noises:", c, file)
             l = np.array(l)
             x.append(l)
             
-    return (np.array(x), np.array(y))
+    return (np.array(x), np.array(y),filenames)
 
 def negGrowthRateLoss(b,q):
     """ Customized loss function. """
     return (K.mean(-K.log(b +pow(-1,b)+pow(-1,b+1)*q)/K.log(2.0)))
 
-def training(k, fileType, fileName, trainCollection, valCollection):
-    """ Training the data."""
+def training(k, fileType, train_ground_truth_folder, train_noisy_folder, val_ground_truth_folder, val_noisy_folder, dest):
+    """ 
+        Training the data.
+        
+    Parameters: 
+        k (int): number of bits to look at.
+        fileType (str): type of the file. Could be one of the following: pdf, latex, jpeg, html.
+        train_ground_truth_folder (str): the path to the training ground truth folder.
+        train_noisy_folder (str): the path to the training noisy folder.
+        val_ground_truth_folder (str): the path to the validation ground truth folder.
+        val_noisy_folder (str): the path to the validation noisy folder.
+        dest (str): the path to the destination folder. For training, the model presistence will be saved.
+    """
     input_rows, input_cols = k, 1
     #pad_dim = 32
     
     # the data, shuffled and split between train and test sets
-    (x_train, y_train) = load_data("train", fileType, trainCollection)
-    (x_valid, y_valid) = load_data("valid", fileType, valCollection)
+    (x_train, y_train,_) = load_data(train_ground_truth_folder, train_noisy_folder, fileType)
+    (x_valid, y_valid,_) = load_data(val_ground_truth_folder, val_noisy_folder, fileType)
     print('Before reshape:')
     print('x_train shape:', x_train.shape)
     print('x_valid shape:', x_valid.shape)
@@ -116,10 +146,7 @@ def training(k, fileType, fileName, trainCollection, valCollection):
     x_valid = np.reshape(x_valid,(len(x_valid),input_rows,input_cols,1))
     y_train = np.reshape(y_train,(len(y_train),input_rows,input_cols,1))
     y_valid = np.reshape(y_valid,(len(y_valid),input_rows,input_cols,1))
-    # x_train = np.repeat(x_train[:, :, np.newaxis], pad_dim, axis=2)
-    # x_valid = np.repeat(x_valid[:, :, np.newaxis], pad_dim, axis=2)
-    # y_train = np.repeat(y_train[:, :, np.newaxis], pad_dim, axis=2)
-    # y_valid = np.repeat(y_valid[:, :, np.newaxis], pad_dim, axis=2)
+
     print('After reshape:')
     print('x_train shape:', x_train.shape)
     print('x_valid shape:', x_valid.shape)
@@ -134,14 +161,16 @@ def training(k, fileType, fileName, trainCollection, valCollection):
     batch_size = 50
     epochs = 20
 
+    if dest[-1] != '/':
+        dest += '/'
+        
     # below is an example for the html U-Net model
     model = Unet1DNoPooling(input_size=input_shape, k = k, loss = negGrowthRateLoss, learning_rate = 1e-5)
-    filepath = "../results/"+fileName+".h5"
+    filepath = dest+fileType+".h5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
-    csv_logger = CSVLogger("../results/"+fileName+".csv")
+    csv_logger = CSVLogger(dest+fileType+".csv")
     # Helper: Early stopping.
     early_stopper = EarlyStopping(patience=5)
-    #plot_model(model,to_file="../results/"+fileName+".png",show_shapes =  True)
     model.fit(x_train, y_train,
               batch_size=batch_size,
               epochs=epochs,
@@ -149,13 +178,23 @@ def training(k, fileType, fileName, trainCollection, valCollection):
               validation_data=(x_valid, y_valid),callbacks=[checkpoint,csv_logger,early_stopper])
     model.save_weights(filepath)
 
-def inference(k, persistance_path, fileType, output_file_name, testCollection):
-    """ Using the model presistence to do predictions."""
+def inference(k, persistance_path, fileType, test_ground_truth_folder, test_noisy_folder, dest):
+    """ 
+        Using the model presistence to do predictions.
+        
+    Parameters: 
+        k (int): number of bits to look at.
+        fileType (str): type of the file. Could be one of the following: pdf, latex, jpeg, html.
+        persistance_path (str): the path to the saved model file.
+        test_ground_truth_folder (str): the path to the testing ground truth folder.
+        test_noisy_folder (str): the path to the testing noisy folder.
+        dest (str): the path to the destination folder. For inference, the actual perdiction and the summary file will be saved.
+    """
     input_rows, input_cols = k, 1
     #pad_dim = 32
     
     # load the shuffled test data
-    (x_test, y_test) = load_data("test",fileType, testCollection)
+    (x_test, y_test,filenames) = load_data(test_ground_truth_folder, test_noisy_folder, fileType)
     print('Before reshape:')
     print('x_test shape:', x_test.shape)
     print('y_test shape:', y_test.shape)
@@ -177,20 +216,24 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
     model = Unet1DNoPooling(input_size=input_shape, k = k, loss = negGrowthRateLoss, pretrained_weights=persistance_path, learning_rate = 1e-5)
     predictions = model.predict(x_test,verbose=0)
     print(predictions.shape)
+    
     p_p_y = np.array([[0.0,0.0],[0.0,0.0]])
     ct = np.array([0.0,0.0])
     p_p = np.array([0.0,0.0])
     p_y = np.array([0.0,0.0])
+    
+    if dest[-1] != '/':
+        dest += '/'
+        
     for j in range(0,len(y_test)):
-        if j < 5: 
-            filename = open("../results/res_test_exmpl_"+str(j)+".csv",'w+')
+        filename = open(dest+filenames[j],'w+')
         # Excluding the last bit here, since it's appended and will always be 0
-        for i in range(0,k):
+        for i in range(0,4095):
             
-            if j < 5: filename.write(str(predictions[j][i])+","+str(y_test[j][i])+","+str(x_test[j][i])+"\n")
+            filename.write(str(predictions[j][i])"\n")
             #if(y_test[j][i][0][0] != x_test[j][i][0][0]):
             #print(str(y_test[j][i][0][0])+" "+str(x_test[j][i][0][0])+"  "+str(predictions[j][i][0][0]))
-            if( y_test[j][i] == 0):
+            if(y_test[j][i] == 0):
                 p_p_y[1][0] = p_p_y[1][0]+predictions[j][i][0][0]
             #p[1][y_test[j][i]] = p[1][y_test[j][i]]+(1.0-predictions[j][i])
                 ct[0] = ct[0]+1.0
@@ -224,7 +267,7 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
 
     #ct = ct/sum(ct)
     #ct_pred = ct_pred/sum(ct_pred)
-    file_path = "../results/"+output_file_name+".txt"
+    file_path = dest+fileType+"test_summary.txt"
     file = open(file_path,'w+')
     file.write("Joint:\n")
     file.write(str(p_p_y))
@@ -245,6 +288,7 @@ def inference(k, persistance_path, fileType, output_file_name, testCollection):
     file.write(str(mut_inf))
 
 if __name__ == "__main__":
+    # main program
     parser = argparse.ArgumentParser(
         description='RACC_NR U-Net script')
     parser.add_argument("command", required=True,
@@ -268,15 +312,15 @@ if __name__ == "__main__":
     parser.add_argument('-tn','--testn', required=False,
                         metavar="/path/to/dataset/",
                         help='Noisy folder for the testing data')
-    parser.add_argument("filetype", required=True,
+    parser.add_argument("--ft", required=True,
                         metavar="html",
                         help="Available file type: html, latex, jpeg, pdf")
     parser.add_argument('-d','--dest', required=False,
                         metavar="/path/to/prediction/",
-                        help='Path to save the prediction files')
-    parser.add_argument('-dl','--datalist', required=True,
-                        metavar="/path/to/datalist_file/",
-                        help='Path to existing data list file (prevent getting same samples)')
+                        help='Path to save the prediction files (at the prediction time) or model file (at the training time)')
+    parser.add_argument('-p','--persistence', required=False,
+                        metavar="/path/to/persistence/",
+                        help='Path to the saved model file')
     args = parser.parse_args()
     
     # validation
@@ -288,7 +332,11 @@ if __name__ == "__main__":
     elif args.command == "test":
         assert args.testgt, "Provide --testgt to run prediction on"
         assert args.testn, "Provide --testn to run prediction on"
-    
-    #training(4096, "jpeg","jpeg_unet_nopooling","../4095_noisy_randomized_0p01/training/jpeg_training_noisy.txt","../4095_noisy_randomized_0p01/validation/jpeg_validation_noisy.txt")
-    inference(4096, "../results/jpeg_unet_nopooling.h5", "jpeg", "jpeg_unet_nopooling", "../4095_noisy_randomized_0p01/testing/jpeg_testing.txt")
+        assert args.persistence, "Provide --persistence to load the saved model"
+        
+    # Actual running
+    if args.command == "train":
+        training(4096, args.ft, args.traingt, args.trainn, args.valgt, args.valn, args.dest)
+    elif args.command == "test":
+        inference(4096, args.persistence, args.ft, args.testgt, args.testn, args.dest)
 
