@@ -163,6 +163,8 @@ def training(k, fileType, train_ground_truth_folder, train_noisy_folder, val_gro
 
     if dest[-1] != '/':
         dest += '/'
+    if dest.split('/')[-2].lower() != fileType:
+        dest += fileType + '/'
     if not os.path.exists(dest):
         os.makedirs(dest)
         
@@ -226,8 +228,11 @@ def inference(k, persistance_path, fileType, test_ground_truth_folder, test_nois
     
     if dest[-1] != '/':
         dest += '/'
+    if dest.split('/')[-2].lower() != fileType:
+        dest += fileType + '/'
     if not os.path.exists(dest):
         os.makedirs(dest)
+        
         
     for j in range(0,len(y_test)):
         filename = open(dest+filenames[j],'w+')
