@@ -21,7 +21,7 @@ import os
 import argparse
 
 # Initial setup
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 config.gpu_options.per_process_gpu_memory_fraction = 0.7
@@ -163,6 +163,8 @@ def training(k, fileType, train_ground_truth_folder, train_noisy_folder, val_gro
 
     if dest[-1] != '/':
         dest += '/'
+    if not os.path.exists(dest):
+        os.makedirs(dest)
         
     # below is an example for the html U-Net model
     model = Unet1DNoPooling(input_size=input_shape, k = k, loss = negGrowthRateLoss, learning_rate = 1e-5)
@@ -224,6 +226,8 @@ def inference(k, persistance_path, fileType, test_ground_truth_folder, test_nois
     
     if dest[-1] != '/':
         dest += '/'
+    if not os.path.exists(dest):
+        os.makedirs(dest)
         
     for j in range(0,len(y_test)):
         filename = open(dest+filenames[j],'w+')
