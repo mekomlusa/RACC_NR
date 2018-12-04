@@ -18,6 +18,7 @@ from keras import losses
 from keras import regularizers
 from models import Unet1D, DilatedUnet1D, Unet1DNoPooling
 import os
+import os.path
 import argparse
 
 # Initial setup
@@ -86,9 +87,15 @@ def load_data(ground_truth_folder, noisy_folder, label, kind = "training"):
         if count % 500 == 0:
             print("Loading "+kind+" example: "+str(count)+" for label : "+label)
         
-        filenames.append(file)
+        if os.path.isfile(ground_truth_folder+file) and os.path.isfile(noisy_folder+file):
+            filenames.append(file)
+        else:
+            # handle case when the file is found in one folder but not the other
+            print("Error: file",file,"is missing in either the ground truth folder or the noisy folder.")
+            print("Skipping this file...")
+            continue
             
-        with open(ground_truth_folder+"/"+file, 'rb') as f:
+        with open(ground_truth_folder+file, 'rb') as f:
             l = []
             for c in get_next_character(f):
                 try:
@@ -98,7 +105,7 @@ def load_data(ground_truth_folder, noisy_folder, label, kind = "training"):
             l = np.array(l)
             y.append(l) 
         
-        with open(noisy_folder+"/"+file, 'rb') as f:
+        with open(noisy_folder+file, 'rb') as f:
             l = []
             for c in get_next_character(f):
                 try:
@@ -220,7 +227,7 @@ def inference(k, persistance_path, fileType, test_ground_truth_folder, test_nois
 
     model = Unet1DNoPooling(input_size=input_shape, k = k, loss = negGrowthRateLoss, pretrained_weights=persistance_path, learning_rate = 1e-5)
     predictions = model.predict(x_test,verbose=0)
-    print(predictions.shape)
+    print("Shape of the predicted array:",predictions.shape)
     
     p_p_y = np.array([[0.0,0.0],[0.0,0.0]])
     ct = np.array([0.0,0.0])
@@ -233,14 +240,20 @@ def inference(k, persistance_path, fileType, test_ground_truth_folder, test_nois
         dest += fileType + '/'
     if not os.path.exists(dest):
         os.makedirs(dest)
-        
-        
+          
     for j in range(0,len(y_test)):
-        filename = open(dest+filenames[j],'w+')
-        # Excluding the last bit here, since it's appended and will always be 0
-        for i in range(0,4095):
+        filename = dest+filenames[j]
+        #filename = open(dest+filenames[j],'w+')
+        if j % 500 == 0:
+            print("Writing out the",j,"-th test files.")
             
-            filename.write(str(predictions[j][i])+"\n")
+        # Excluding the last bit here, since it's appended and will always be 0
+        single_pred = predictions[j][:-1]
+        single_pred = single_pred.flatten('F')
+        np.savetxt(filename, single_pred)
+ 
+        for i in range(0,4095):
+            #filename.write(str(predictions[j][i])+"\n")
             #if(y_test[j][i][0][0] != x_test[j][i][0][0]):
             #print(str(y_test[j][i][0][0])+" "+str(x_test[j][i][0][0])+"  "+str(predictions[j][i][0][0]))
             if(y_test[j][i] == 0):
@@ -253,14 +266,12 @@ def inference(k, persistance_path, fileType, test_ground_truth_folder, test_nois
                 ct[1] = ct[1]+1.0
             p_p[1] = p_p[1]+predictions[j][i][0][0]
 
-        filename.close()
-
+    print("Calculating mutual information.")
     p_p_y[1][0] = p_p_y[1][0]/ct[0]
     p_p_y[1][1] = p_p_y[1][1]/ct[1]
 
     p_p_y[0][0] = 1.0 - p_p_y[1][0]
     p_p_y[0][1] = 1.0 - p_p_y[1][1]
-
 
     p_p[1] = p_p[1]/(ct[0]+ct[1])
     p_p[0] = 1-p_p[1]
