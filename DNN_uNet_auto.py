@@ -87,7 +87,7 @@ def load_data(ground_truth_folder, noisy_folder, label):
         
         filenames.append(file)
             
-        with open(ground_truth_folder+label+"/"+file, 'rb') as f:
+        with open(ground_truth_folder+"/"+file, 'rb') as f:
             l = []
             for c in get_next_character(f):
                 try:
@@ -97,7 +97,7 @@ def load_data(ground_truth_folder, noisy_folder, label):
             l = np.array(l)
             y.append(l) 
         
-        with open(noisy_folder+label+"/"+file, 'rb') as f:
+        with open(noisy_folder+"/"+file, 'rb') as f:
             l = []
             for c in get_next_character(f):
                 try:
