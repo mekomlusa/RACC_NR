@@ -295,7 +295,7 @@ if __name__ == "__main__":
     # main program
     parser = argparse.ArgumentParser(
         description='RACC_NR U-Net script')
-    parser.add_argument("command", required=True,
+    parser.add_argument("command",
                         metavar="<command>",
                         help="'train' or 'test'")
     parser.add_argument('-trgt','--traingt', required=False,
