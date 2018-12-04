@@ -54,7 +54,7 @@ def get_next_character(f):
         yield c
         c = f.read(1)
 
-def load_data(ground_truth_folder, noisy_folder, label):
+def load_data(ground_truth_folder, noisy_folder, label, kind = "training"):
     """ 
         Preparing the data.
         
@@ -62,6 +62,7 @@ def load_data(ground_truth_folder, noisy_folder, label):
         ground_truth_folder (str): the path to the ground truth folder.
         noisy_folder (str): the path to the noisy folder.
         label (str): type of the data. Could be one of the following: pdf, latex, jpeg, html.
+        kind (str): what kind of data it is (training, validation or testing). Default to be training.
         
     Returns:
         np.array(x): an numpy array representation of the features (X).
@@ -131,7 +132,7 @@ def training(k, fileType, train_ground_truth_folder, train_noisy_folder, val_gro
     
     # the data, shuffled and split between train and test sets
     (x_train, y_train,_) = load_data(train_ground_truth_folder, train_noisy_folder, fileType)
-    (x_valid, y_valid,_) = load_data(val_ground_truth_folder, val_noisy_folder, fileType)
+    (x_valid, y_valid,_) = load_data(val_ground_truth_folder, val_noisy_folder, fileType, kind = "validation")
     print('Before reshape:')
     print('x_train shape:', x_train.shape)
     print('x_valid shape:', x_valid.shape)
@@ -198,7 +199,7 @@ def inference(k, persistance_path, fileType, test_ground_truth_folder, test_nois
     #pad_dim = 32
     
     # load the shuffled test data
-    (x_test, y_test,filenames) = load_data(test_ground_truth_folder, test_noisy_folder, fileType)
+    (x_test, y_test,filenames) = load_data(test_ground_truth_folder, test_noisy_folder, fileType, kind = "testing")
     print('Before reshape:')
     print('x_test shape:', x_test.shape)
     print('y_test shape:', y_test.shape)
