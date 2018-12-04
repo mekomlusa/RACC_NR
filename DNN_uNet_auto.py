@@ -87,6 +87,10 @@ def load_data(ground_truth_folder, noisy_folder, label, kind = "training"):
         if count % 500 == 0:
             print("Loading "+kind+" example: "+str(count)+" for label : "+label)
         
+        if file == '.DS_Store':
+            print("Skipping .DS_Store file.")
+            continue
+        
         if os.path.isfile(ground_truth_folder+file) and os.path.isfile(noisy_folder+file):
             filenames.append(file)
         else:
