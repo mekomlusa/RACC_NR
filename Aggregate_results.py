@@ -9,8 +9,13 @@ Written by RL for the RACC_NR project.
 import os
 import pandas as pd
 import argparse
+import warnings
 
-result_df = pd.DataFrame(columns=['training_type','testing_type','file_type','joint_matrix','mariginal_prediction','marginal_labels','mutual_information'])
+cn = ['training_type','testing_type','file_type','joint_matrix','mariginal_prediction','marginal_labels','mutual_information']
+result_df = pd.DataFrame(columns=cn)
+
+# suppress all warnings
+warnings.filterwarnings("ignore")
 
 # function to save the dataframe
 def output_file(df, filen, output_path):
@@ -42,7 +47,7 @@ for root, dirs, files in os.walk(dir_path):
             with open(full_path, 'r') as f:
                 data = f.read()
                 data_split = data.split('\n')
-                df = pd.DataFrame([full_path_elem[-4],full_path_elem[-3],full_path_elem[-2],data_split[1]+'\n'+data_split[2],data_split[4],data_split[6],data_split[-1]],index=[0])
+                df = pd.DataFrame([[full_path_elem[-4],full_path_elem[-3],full_path_elem[-2],data_split[1]+'\n'+data_split[2],data_split[4],data_split[6],data_split[-1]]],columns=cn)
                 result_df = pd.concat([result_df, df], ignore_index=True)
                 
 # once finish, output the dataframe            
