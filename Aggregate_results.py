@@ -11,7 +11,7 @@ import pandas as pd
 import argparse
 import warnings
 
-cn = ['training_type','testing_type','file_type','joint_matrix','mariginal_prediction','marginal_labels','mutual_information']
+cn = ['training_prob','testing_prob','file_type','joint_matrix','mariginal_prediction','marginal_labels','mutual_information']
 result_df = pd.DataFrame(columns=cn)
 
 # suppress all warnings
@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser(
         description='RACC_NR U-Net data aggregation script')
 parser.add_argument('--p', required=True,
                     metavar="/path/to/dataset/",
-                    help='Path to the saved structure folder')
+                    help='Path to the saved folder (root, containing all the result files)')
 args = parser.parse_args()
 dir_path = args.p
 
@@ -47,7 +47,9 @@ for root, dirs, files in os.walk(dir_path):
             with open(full_path, 'r') as f:
                 data = f.read()
                 data_split = data.split('\n')
-                df = pd.DataFrame([[full_path_elem[-4],full_path_elem[-3],full_path_elem[-2],data_split[1]+'\n'+data_split[2],data_split[4],data_split[6],data_split[-1]]],columns=cn)
+                train_prob_convert = full_path_elem[-4].split('_')[1].replace('p','.')
+                test_prob_convert = full_path_elem[-3].split('_')[1].replace('p','.')
+                df = pd.DataFrame([[train_prob_convert,test_prob_convert,full_path_elem[-2],data_split[1]+'\n'+data_split[2],data_split[4],data_split[6],data_split[-1]]],columns=cn)
                 result_df = pd.concat([result_df, df], ignore_index=True)
                 
 # once finish, output the dataframe            
